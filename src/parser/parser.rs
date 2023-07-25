@@ -10,7 +10,7 @@ use anyhow::*;
 #[derive(Debug)]
 pub enum ParserError {
     UnexpectedToken { want: String, got: String },
-    NoIdentifier(Token),
+    MissingIdentifier(Token),
 }
 
 impl fmt::Display for ParserError {
@@ -21,7 +21,7 @@ impl fmt::Display for ParserError {
                 "parser found unexpected token: {}, expected: {}",
                 got, want,
             ),
-            ParserError::NoIdentifier(token) => {
+            ParserError::MissingIdentifier(token) => {
                 write!(
                     f,
                     "Was expecting identifier, got {}",
@@ -108,7 +108,7 @@ impl Parser {
     fn read_identifier(&mut self) -> Result<&String> {
         match self.current_token {
             Token::Ident(ref identifier) => Ok(identifier),
-            _ => bail!(ParserError::NoIdentifier(self.current_token.clone())),
+            _ => bail!(ParserError::MissingIdentifier(self.current_token.clone())),
         }
     }
 
