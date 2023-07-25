@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub mod ast;
 pub mod lexer;
 pub mod parser;
@@ -10,5 +11,5 @@ fn main() {
         user
     );
 
-    repl::repl::start();
+    repl::start();
 }
