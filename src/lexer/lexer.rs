@@ -1,6 +1,8 @@
+// src/lexer/lexer.rs
+
 use anyhow::Result;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Ident(String),
     Int(String),
@@ -37,6 +39,44 @@ pub enum Token {
     EOF,
 }
 
+impl Token {
+    pub fn token_literal(&self) -> &str {
+        match self {
+            Token::Ident(s) => s,
+            Token::Int(s) => s,
+            Token::Assign => "=",
+            Token::Plus => "+",
+            Token::Minus => "-",
+            Token::Bang => "!",
+            Token::Asterisk => "*",
+            Token::Slash => "/",
+            Token::LessThan => "<",
+            Token::GreaterThan => ">",
+            Token::Equal => "==",
+            Token::NotEqual => "!=",
+            Token::Comma => ",",
+            Token::Semicolon => ";",
+            Token::LParen => "(",
+            Token::RParen => ")",
+            Token::LBrace => "{",
+            Token::RBrace => "}",
+            Token::Function => "fn",
+            Token::Let => "let",
+            Token::True => "true",
+            Token::False => "false",
+            Token::If => "if",
+            Token::Else => "else",
+            Token::Return => "return",
+            Token::EOF => "",
+            _ => unreachable!(
+                "This should not happen when searching for token literal, got {:?}",
+                &self
+            ),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Lexer {
     input: String,
     position: usize,
