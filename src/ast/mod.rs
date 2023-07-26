@@ -24,6 +24,7 @@ impl fmt::Display for Node {
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
+    Expression(ExpressionStatement),
 }
 
 impl fmt::Display for Statement {
@@ -31,6 +32,7 @@ impl fmt::Display for Statement {
         match self {
             Statement::Let(s) => s.fmt(f),
             Statement::Return(s) => s.fmt(f),
+            Statement::Expression(s) => s.fmt(f),
         }
     }
 }
@@ -68,6 +70,7 @@ impl Program {
             match &self.statements[0] {
                 Statement::Let(let_statement) => let_statement.token_literal(),
                 Statement::Return(return_statement) => return_statement.token_literal(),
+                Statement::Expression(expression_statement) => expression_statement.token_literal(),
             }
         } else {
             ""
@@ -130,6 +133,25 @@ impl ReturnStatement {
 impl fmt::Display for ReturnStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "return {};", self.return_value)
+    }
+}
+
+#[derive(Debug)]
+pub struct ExpressionStatement {
+    pub token: Token,
+    pub expression: Expression,
+}
+
+impl ExpressionStatement {
+    fn statement_node(&self) {}
+    pub fn token_literal(&self) -> &str {
+        self.token.token_literal()
+    }
+}
+
+impl fmt::Display for ExpressionStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{};", self.expression)
     }
 }
 
@@ -255,6 +277,21 @@ mod tests {
         });
 
         assert_eq!(expression.to_string(), expect);
+        Ok(())
+    }
+
+    #[test]
+    fn format_expression_statement() -> Result<()> {
+        let expect = "x;";
+        let expr_stmt = ExpressionStatement {
+            token: Token::Ident("x".to_string()),
+            expression: Expression::Identifier(Identifier {
+                token: Token::Ident("x".to_string()),
+                value: "x".to_string(),
+            }),
+        };
+
+        assert_eq!(expr_stmt.to_string(), expect);
         Ok(())
     }
 

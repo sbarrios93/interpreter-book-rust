@@ -2,15 +2,22 @@ use std::fmt;
 
 // src/parser/parser.rs
 use crate::{
-    ast::{Expression, Identifier, LetStatement, Program, ReturnStatement, Statement},
+    ast::{
+        Expression, ExpressionStatement, Identifier, LetStatement, Program, ReturnStatement,
+        Statement,
+    },
     lexer::{Lexer, Token},
 };
 use anyhow::*;
+
+type PrefixParseFunction = fn(&mut Parser) -> Result<Expression>;
+type InfixParseFunction = fn(&mut Parser, Expression) -> Result<Expression>;
 
 #[derive(Debug)]
 pub enum ParserError {
     UnexpectedToken { want: String, got: String },
     MissingIdentifier(Token),
+    PrefixExpressionNotImplemented(Token),
 }
 
 impl fmt::Display for ParserError {
@@ -24,8 +31,26 @@ impl fmt::Display for ParserError {
             ParserError::MissingIdentifier(token) => {
                 write!(f, "Was expecting identifier, got {}", token.token_literal())
             }
+            ParserError::PrefixExpressionNotImplemented(token) => {
+                write!(
+                    f,
+                    "Expression for token {} not implemented on prefix",
+                    token.token_literal()
+                )
+            }
         }
     }
+}
+
+#[derive(Debug, PartialOrd, PartialEq)]
+pub enum OperatorPrecedence {
+    Lowest,      // Lowest precedence
+    Equals,      // ==
+    LessGreater, // > or <
+    Sum,         // +
+    Product,     // *
+    Prefix,      // -X or !X
+    Call,        // myFunction(X)
 }
 
 struct Parser {
@@ -70,7 +95,7 @@ impl Parser {
         match self.current_token {
             Token::Let => Ok(Statement::Let(self.parse_let_statement()?)),
             Token::Return => Ok(Statement::Return(self.parse_return_statement()?)),
-            _ => Err(anyhow!("Invalid token: {:?}", self.current_token)),
+            _ => Ok(Statement::Expression(self.parse_expression_statement()?)),
         }
     }
 
@@ -114,6 +139,24 @@ impl Parser {
         })
     }
 
+    fn parse_expression_statement(&mut self) -> Result<ExpressionStatement> {
+        let expression = self.parse_expression(OperatorPrecedence::Lowest)?;
+
+        if self.peek_token_is(&Token::Semicolon) {
+            self.next_token()?;
+        }
+        Ok(ExpressionStatement {
+            token: self.current_token.clone(),
+            expression,
+        })
+    }
+
+    fn parse_expression(&self, precedence: OperatorPrecedence) -> Result<Expression> {
+        let left_expression = self.parse_prefix()?;
+
+        Ok(left_expression)
+    }
+
     fn read_identifier(&mut self) -> Result<&String> {
         match self.current_token {
             Token::Ident(ref identifier) => Ok(identifier),
@@ -139,6 +182,22 @@ impl Parser {
                 got: self.peek_token.token_literal().to_string()
             })
         }
+    }
+
+    fn parse_prefix(&self) -> Result<Expression> {
+        match self.current_token {
+            Token::Ident(_) => Ok(self.parse_identifier()),
+            _ => bail!(ParserError::PrefixExpressionNotImplemented(
+                self.current_token.clone()
+            )),
+        }
+    }
+
+    fn parse_identifier(&self) -> Expression {
+        Expression::Identifier(Identifier {
+            token: self.current_token.clone(),
+            value: self.current_token.token_literal().to_string(),
+        })
     }
 }
 #[cfg(test)]
@@ -217,6 +276,34 @@ mod test {
             }
         }
 
+        Ok(())
+    }
+
+    #[test]
+    fn identifier_expression() -> Result<()> {
+        let input = "foobar";
+
+        let lexer = Lexer::new(input.to_string());
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program()?;
+
+        if program.statements.len() != 1 {
+            bail!(
+                "program.Statements does not contain 3 statements, got {}",
+                program.statements.len()
+            )
+        }
+        for statement in program.statements {
+            match statement {
+                Statement::Expression(expression_statement) => {
+                    assert_eq!(expression_statement.token_literal(), "foobar");
+                    println!("{}", expression_statement.token_literal());
+                    assert_eq!(expression_statement.expression.to_string(), "foobar")
+                }
+                _ => bail!("Statement not ExpressionStatement"),
+            }
+        }
         Ok(())
     }
 }
