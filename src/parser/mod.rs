@@ -145,7 +145,6 @@ impl Parser {
 mod test {
 
     use super::*;
-    use anyhow::{bail, Ok, Result};
 
     fn let_statement_components(statement: &Statement, name: &str) -> Result<()> {
         match statement {
