@@ -10,9 +10,6 @@ use crate::{
 };
 use anyhow::*;
 
-type PrefixParseFunction = fn(&mut Parser) -> Result<Expression>;
-type InfixParseFunction = fn(&mut Parser, Expression) -> Result<Expression>;
-
 #[derive(Debug)]
 pub enum ParserError {
     UnexpectedToken { want: String, got: String },
@@ -157,6 +154,22 @@ impl Parser {
         Ok(left_expression)
     }
 
+    fn parse_prefix(&self) -> Result<Expression> {
+        match self.current_token {
+            Token::Ident(_) => Ok(self.parse_identifier()),
+            _ => bail!(ParserError::PrefixExpressionNotImplemented(
+                self.current_token.clone()
+            )),
+        }
+    }
+
+    fn parse_identifier(&self) -> Expression {
+        Expression::Identifier(Identifier {
+            token: self.current_token.clone(),
+            value: self.current_token.token_literal().to_string(),
+        })
+    }
+
     fn read_identifier(&mut self) -> Result<&String> {
         match self.current_token {
             Token::Ident(ref identifier) => Ok(identifier),
@@ -182,22 +195,6 @@ impl Parser {
                 got: self.peek_token.token_literal().to_string()
             })
         }
-    }
-
-    fn parse_prefix(&self) -> Result<Expression> {
-        match self.current_token {
-            Token::Ident(_) => Ok(self.parse_identifier()),
-            _ => bail!(ParserError::PrefixExpressionNotImplemented(
-                self.current_token.clone()
-            )),
-        }
-    }
-
-    fn parse_identifier(&self) -> Expression {
-        Expression::Identifier(Identifier {
-            token: self.current_token.clone(),
-            value: self.current_token.token_literal().to_string(),
-        })
     }
 }
 #[cfg(test)]
